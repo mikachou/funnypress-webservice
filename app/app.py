@@ -3,8 +3,8 @@ from pydantic import BaseModel
 from transformers import AutoTokenizer, TFAutoModelForSequenceClassification
 import tensorflow as tf
 
-# Define the Hugging Face model repo
-MODEL_NAME = "mikachou/funnypress-model"  # Replace with your model's Hugging Face Hub name
+# Hugging Face model repo
+MODEL_NAME = "mikachou/funnypress-model"
 
 # Load the model and tokenizer from the Hugging Face Hub
 try:
@@ -22,6 +22,7 @@ app = FastAPI(
 
 # Input schema for predictions
 class PredictionInput(BaseModel):
+    id: str | None = None
     title: str
 
 # Endpoint for prediction
@@ -51,6 +52,8 @@ async def predict(input_data: PredictionInput):
             "title": input_data.title,
             "score": positive_score,
         }
+        if input_data.id:
+            response["id"] = input_data.id
         return response
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Prediction failed: {e}")
