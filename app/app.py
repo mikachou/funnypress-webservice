@@ -58,6 +58,40 @@ async def predict(input_data: PredictionInput):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Prediction failed: {e}")
 
+@app.post("/predict_batch")
+async def predict_batch(input_data: list[PredictionInput]):
+    try:
+        titles = [item.title for item in input_data]
+
+        # Tokenize the input texts in batch
+        inputs = tokenizer(
+            titles,
+            return_tensors="tf",
+            truncation=True,
+            padding=True,
+            max_length=512,
+        )
+
+        # Run the model in batch
+        outputs = model(**inputs)
+        logits = outputs.logits
+        probabilities = tf.nn.softmax(logits, axis=-1).numpy()
+
+        response_list = []
+        for i, item in enumerate(input_data):
+            positive_score = float(probabilities[i][1])
+            response = {
+                "title": item.title,
+                "score": positive_score,
+            }
+            if item.id:
+                response["id"] = item.id
+            response_list.append(response)
+
+        return response_list
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Batch prediction failed: {e}")
+
 # Run the FastAPI app
 if __name__ == "__main__":
     import uvicorn
